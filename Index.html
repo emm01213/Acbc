@@ -1,0 +1,1089 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5S Finding Dashboard</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+    background: #f3f5f9;
+    color: #253047;
+    padding: 25px;
+}
+
+.container {
+    max-width: 1600px;
+    margin: auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+header h1 { font-size: 28px; }
+header p { color: #718096; margin-top: 5px; }
+
+button {
+    border: none;
+    padding: 11px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.primary { background: #2563eb; color: white; }
+.secondary { background: #e2e8f0; color: #334155; }
+.edit-button { background: #dbeafe; color: #1d4ed8; }
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 25px;
+}
+
+.card, .panel {
+    background: white;
+    border-radius: 10px;
+    padding: 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.card p { color: #718096; font-size: 14px; }
+.card h2 { font-size: 32px; margin-top: 12px; }
+
+.panel { margin-bottom: 25px; }
+.panel h2 { font-size: 19px; margin-bottom: 20px; }
+
+.filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+input, select, textarea {
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.filters input, .filters select {
+    width: auto;
+    min-width: 170px;
+}
+
+.table-wrapper { overflow-x: auto; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1200px;
+}
+
+th, td {
+    text-align: left;
+    padding: 13px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+}
+
+th { background: #f8fafc; color: #475569; }
+
+.status {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    background: #e2e8f0;
+}
+
+.status.closed { background: #dcfce7; color: #166534; }
+.status.pending { background: #fee2e2; color: #991b1b; }
+.status.progress { background: #fef3c7; color: #92400e; }
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.modal-content {
+    background: white;
+    max-width: 750px;
+    width: 100%;
+    margin: 10px auto;
+    padding: 25px;
+    border-radius: 10px;
+    max-height: calc(100vh - 45px);
+    overflow-y: auto;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group { margin-bottom: 15px; }
+
+.form-group label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.full { grid-column: 1 / -1; }
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+#message { margin-bottom: 15px; font-size: 14px; }
+
+.photo-preview {
+    display: none;
+    width: 100%;
+    max-width: 220px;
+    max-height: 160px;
+    object-fit: cover;
+    margin-top: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+.table-photo {
+    width: 90px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+}
+
+.photo-link {
+    display: inline-block;
+}
+
+.no-photo {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.upload-note {
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+@media(max-width: 900px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media(max-width: 600px) {
+    body { padding: 12px; }
+    .cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card { padding: 14px; }
+    .card h2 { font-size: 25px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .full { grid-column: auto; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+    <div>
+        <h1>5S Finding Dashboard</h1>
+        <p>5S Workplace Audit & Improvement Monitoring</p>
+    </div>
+    <button class="primary" onclick="openForm()">+ Add New Finding</button>
+</header>
+
+<div id="message"></div>
+
+<section class="cards">
+    <div class="card"><p>Total Findings</p><h2 id="total">0</h2></div>
+    <div class="card"><p>Open Findings</p><h2 id="open">0</h2></div>
+    <div class="card"><p>In Progress</p><h2 id="progress">0</h2></div>
+    <div class="card"><p>Closed Findings</p><h2 id="closed">0</h2></div>
+</section>
+
+<section class="panel">
+    <h2>5S Findings Register</h2>
+
+    <div class="filters">
+        <input type="text" id="search" placeholder="Search findings..." oninput="renderTable()">
+
+        <select id="departmentFilter" onchange="renderTable()">
+            <option value="">All Departments</option>
+        </select>
+
+        <select id="statusFilter" onchange="renderTable()">
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Closed">Closed</option>
+            <option value="Completed">Completed</option>
+        </select>
+
+        <button class="secondary" onclick="loadData()">Refresh Data</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Finding ID</th>
+                    <th>Date</th>
+                    <th>Department</th>
+                    <th>Location</th>
+                    <th>5S Category</th>
+                    <th>Finding Description</th>
+                    <th>Before</th>
+                    <th>After</th>
+                    <th>Responsible Person</th>
+                    <th>Target Date</th>
+                    
+                    <th>Status</th>
+                    <th>Edit</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="12">Loading data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+</div>
+
+
+
+<!-- ADD FINDING MODAL -->
+<div class="modal" id="findingModal">
+<div class="modal-content">
+
+<h2 style="margin-bottom:20px;">Add New 5S Finding</h2>
+
+<form id="findingForm">
+<div class="form-grid">
+
+    <!-- DEPARTMENT -->
+    <div class="form-group">
+        <label>Department</label>
+        <select name="Department" required>
+            <option value="">Select Department</option>
+            <option>Production</option>
+            <option>Engineering</option>
+            <option>Quality</option>
+            <option>Warehouse</option>
+            <option>Maintenance</option>
+            <option>HR</option>
+        </select>
+    </div>
+
+   
+<!-- LOCATION -->
+<div class="form-group">
+    <label>Location</label>
+    <input
+        type="text"
+        name="Location"
+        placeholder="Enter location (e.g. Production Line 1)"
+        required
+    >
+</div>
+
+<!-- RESPONSIBLE PERSON -->
+<div class="form-group">
+    <label>Responsible Person</label>
+    <input
+        type="text"
+        name="Responsible Person"
+        placeholder="Enter responsible person's name"
+        required
+    >
+</div>
+
+    <!-- 5S CATEGORY -->
+    <div class="form-group">
+        <label>5S Category</label>
+        <select name="5S Category" required>
+            <option value="">Select Category</option>
+            <option>Sort</option>
+            <option>Set in Order</option>
+            <option>Shine</option>
+            <option>Standardize</option>
+            <option>Sustain</option>
+        </select>
+    </div>
+
+    <!-- FINDING DESCRIPTION -->
+    <div class="form-group full">
+        <label>Finding Description</label>
+        <textarea name="Finding Description" rows="3" required></textarea>
+    </div>
+
+    <!-- BEFORE PHOTOGRAPH -->
+    <div class="form-group full">
+        <label>Before Photograph *</label>
+        <input type="file" id="beforePhoto" accept="image/*" required>
+        <img id="beforePreview" class="photo-preview" alt="Before preview">
+        <p class="upload-note">Maximum image size: 4 MB</p>
+    </div>
+
+</div>
+
+<div class="form-actions">
+    <button type="button" class="secondary" onclick="closeForm()">Cancel</button>
+    <button type="submit" class="primary" id="saveButton">Save Finding</button>
+</div>
+
+</form>
+</div>
+</div>
+
+
+<!-- EDIT FINDING MODAL -->
+<div class="modal" id="editModal">
+<div class="modal-content">
+
+<h2 style="margin-bottom:8px;">Edit 5S Finding</h2>
+<p id="editFindingId" style="color:#718096; margin-bottom:20px;"></p>
+
+<form id="editForm">
+    <div class="form-grid">
+
+        <div class="form-group full">
+            <label>Current After Photograph</label>
+            <img id="editAfterCurrent" class="photo-preview" alt="Current after photograph">
+        </div>
+
+        <div class="form-group full">
+            <label>Replace After Photograph</label>
+            <input type="file" id="editAfterPhoto" accept="image/*">
+            <img id="editAfterPreview" class="photo-preview" alt="New after preview">
+            <p class="upload-note">Leave empty to keep the existing photograph</p>
+        </div>
+
+        <div class="form-group">
+            <label>Responsible Person</label>
+            <input
+                type="text"
+                name="Responsible Person"
+                id="editResponsiblePerson"
+                placeholder="Enter responsible person's name"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label>Target Date</label>
+            <input type="date" name="Target Date" id="editTargetDate" required>
+        </div>
+
+        <div class="form-group">
+            <label>Status</label>
+            <select name="Status" id="editStatus" required>
+                <option>Pending</option>
+                <option>In Progress</option>
+                <option>Closed</option>
+                <option>Completed</option>
+            </select>
+        </div>
+
+        <div class="form-group full">
+            <label>Corrective Action</label>
+            <textarea name="Action" id="editAction" rows="4"></textarea>
+        </div>
+
+    </div>
+
+    <div class="form-actions">
+        <button type="button" class="secondary" onclick="closeEditModal()">Cancel</button>
+        <button type="submit" class="primary" id="updateButton">Update Finding</button>
+    </div>
+</form>
+</div>
+</div>
+
+
+<!-- HIDDEN UPLOAD IFRAME -->
+<iframe name="uploadFrame" id="uploadFrame" style="display:none;"></iframe>
+
+<script>
+/* =====================================================
+   GOOGLE APPS SCRIPT API
+===================================================== */
+
+const API_URL = "https://script.google.com/macros/s/AKfycbxiWCqmTlFFVMCNUWoxJu5eWYL85hfadO58vQeneQRd2-bgETpn0NW2gIuaTw65MGyxww/exec";
+/* =====================================================
+   CLOUDINARY CONFIGURATION
+===================================================== */
+
+const CLOUDINARY_CLOUD_NAME = "qoijjnkv";
+const CLOUDINARY_UPLOAD_PRESET = "5s_finding_upload";
+
+const CLOUDINARY_UPLOAD_URL =
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+let findings = [];
+let editingFindingId = null;
+
+/* =====================================================
+   JSONP REQUEST
+===================================================== */
+
+function jsonpRequest(parameters) {
+    return new Promise((resolve, reject) => {
+        const callbackName = "callback5S_" +
+            Date.now() + "_" +
+            Math.floor(Math.random() * 100000);
+
+        const script = document.createElement("script");
+        let completed = false;
+
+        const cleanup = () => {
+            delete window[callbackName];
+            script.remove();
+            clearTimeout(timeout);
+        };
+
+        const timeout = setTimeout(() => {
+            if (completed) return;
+            completed = true;
+            cleanup();
+            reject(new Error("API request timed out."));
+        }, 20000);
+
+        window[callbackName] = function(response) {
+            if (completed) return;
+            completed = true;
+            cleanup();
+            resolve(response);
+        };
+
+        const query = new URLSearchParams({
+            ...parameters,
+            callback: callbackName,
+            t: Date.now()
+        });
+
+        script.src = API_URL + "?" + query.toString();
+
+        script.onerror = function() {
+            if (completed) return;
+            completed = true;
+            cleanup();
+            reject(new Error("Unable to connect to Apps Script."));
+        };
+
+        document.body.appendChild(script);
+    });
+}
+
+/* =====================================================
+   IMAGE PREVIEW
+===================================================== */
+
+function setupImagePreview(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+
+    input.addEventListener("change", function() {
+        const file = this.files[0];
+
+        if (!file) {
+            preview.src = "";
+            preview.style.display = "none";
+            return;
+        }
+
+        if (!file.type.startsWith("image/")) {
+            showMessage("Please select an image file.", true);
+            this.value = "";
+            preview.style.display = "none";
+            return;
+        }
+
+        if (file.size > 4 * 1024 * 1024) {
+            showMessage("Image must not exceed 4 MB.", true);
+            this.value = "";
+            preview.style.display = "none";
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            preview.src = event.target.result;
+            preview.style.display = "block";
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+
+setupImagePreview("beforePhoto", "beforePreview");
+setupImagePreview("editAfterPhoto", "editAfterPreview");
+
+
+/* =====================================================
+   UPLOAD IMAGE TO CLOUDINARY
+===================================================== */
+
+async function uploadImage(file) {
+
+    if (!file) {
+        return "";
+    }
+
+    if (!file.type.startsWith("image/")) {
+        throw new Error("Selected file is not an image.");
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+        throw new Error("Image must not exceed 4 MB.");
+    }
+
+    const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error("Only JPG, PNG and WEBP images are allowed.");
+    }
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+
+        const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.secure_url) {
+            throw new Error(
+                result.error?.message || "Cloudinary image upload failed."
+            );
+        }
+
+        return result.secure_url;
+
+    } catch (error) {
+
+        console.error("Cloudinary upload error:", error);
+
+        throw new Error(error.message || "Unable to upload image.");
+    }
+}
+
+/* =====================================================
+   IMAGE DISPLAY
+===================================================== */
+
+function getDriveImageSource(url) {
+    if (!url) return "";
+    return url;
+}
+
+function createPhotoCell(url) {
+    const cell = document.createElement("td");
+
+    if (!url) {
+        const label = document.createElement("span");
+        label.className = "no-photo";
+        label.textContent = "No photo";
+        cell.appendChild(label);
+        return cell;
+    }
+
+    const link = document.createElement("a");
+    link.className = "photo-link";
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+
+    const image = document.createElement("img");
+    image.className = "table-photo";
+    image.src = getDriveImageSource(url);
+    image.alt = "Finding photograph";
+    image.loading = "lazy";
+
+    link.appendChild(image);
+    cell.appendChild(link);
+
+    return cell;
+}
+
+/* =====================================================
+   LOAD FINDINGS
+===================================================== */
+
+async function loadData() {
+    showMessage("Loading findings...", false);
+
+    try {
+        const response = await jsonpRequest({
+            action: "getFindings"
+        });
+
+        if (!Array.isArray(response)) {
+            throw new Error(response?.message || "Invalid findings response.");
+        }
+
+        findings = response;
+
+        updateDashboard();
+        updateDepartmentFilter();
+        renderTable();
+
+        showMessage("Database connected successfully.", false);
+
+    } catch (error) {
+        console.error("Load findings error:", error);
+        showMessage("Unable to load findings: " + error.message, true);
+
+        document.getElementById("tableBody").innerHTML =
+            '<tr><td colspan="12">Unable to load findings.</td></tr>';
+    }
+}
+
+/* =====================================================
+   DASHBOARD COUNTERS
+===================================================== */
+
+function updateDashboard() {
+    document.getElementById("total").textContent = findings.length;
+
+    document.getElementById("open").textContent =
+        findings.filter(x =>
+            x.Status === "Pending" || x.Status === "Open"
+        ).length;
+
+    document.getElementById("progress").textContent =
+        findings.filter(x => x.Status === "In Progress").length;
+
+    document.getElementById("closed").textContent =
+        findings.filter(x =>
+            x.Status === "Closed" || x.Status === "Completed"
+        ).length;
+}
+
+/* =====================================================
+   DEPARTMENT FILTER
+===================================================== */
+
+function updateDepartmentFilter() {
+    const select = document.getElementById("departmentFilter");
+    const currentValue = select.value;
+
+    const departments = [
+        ...new Set(findings.map(x => x.Department).filter(Boolean))
+    ];
+
+    select.innerHTML = '<option value="">All Departments</option>';
+
+    departments.forEach(department => {
+        const option = document.createElement("option");
+        option.value = department;
+        option.textContent = department;
+        select.appendChild(option);
+    });
+
+    select.value = departments.includes(currentValue) ? currentValue : "";
+}
+
+/* =====================================================
+   RENDER TABLE
+===================================================== */
+
+function renderTable() {
+    const tbody = document.getElementById("tableBody");
+
+    const search = document.getElementById("search").value.toLowerCase();
+    const department = document.getElementById("departmentFilter").value;
+    const status = document.getElementById("statusFilter").value;
+
+    const filtered = findings.filter(item => {
+        const searchable = Object.values(item).join(" ").toLowerCase();
+
+        return searchable.includes(search) &&
+            (!department || item.Department === department) &&
+            (!status || item.Status === status);
+    });
+
+    tbody.innerHTML = "";
+
+    if (!filtered.length) {
+        tbody.innerHTML =
+            '<tr><td colspan="12">No findings found.</td></tr>';
+        return;
+    }
+
+    filtered.forEach(item => {
+        const row = document.createElement("tr");
+
+        const values = [
+            item["Finding ID"],
+            item.Date,
+            item.Department,
+            item.Location,
+            item["5S Category"],
+            item["Finding Description"]
+        ];
+
+        values.forEach((value, index) => {
+            const cell = document.createElement("td");
+
+            if (index === 1) {
+                cell.textContent = formatDate(value);
+            } else {
+                cell.textContent = value || "-";
+            }
+
+            row.appendChild(cell);
+        });
+
+        row.appendChild(createPhotoCell(item.Before));
+        row.appendChild(createPhotoCell(item.After));
+
+        const remainingValues = [
+            item["Responsible Person"],
+            item["Target Date"],
+            item.Status
+        ];
+
+        remainingValues.forEach((value, index) => {
+            const cell = document.createElement("td");
+
+            if (index === 1) {
+                cell.textContent = formatDate(value);
+            } else if (index === 2) {
+                const badge = document.createElement("span");
+                badge.className = "status";
+
+                if (value === "Closed" || value === "Completed") {
+                    badge.classList.add("closed");
+                } else if (value === "Pending" || value === "Open") {
+                    badge.classList.add("pending");
+                } else if (value === "In Progress") {
+                    badge.classList.add("progress");
+                }
+
+                badge.textContent = value || "-";
+                cell.appendChild(badge);
+            } else {
+                cell.textContent = value || "-";
+            }
+
+            row.appendChild(cell);
+        });
+
+        const editCell = document.createElement("td");
+        const editButton = document.createElement("button");
+
+        editButton.type = "button";
+        editButton.className = "edit-button";
+        editButton.textContent = "Edit";
+        editButton.addEventListener("click", () => {
+            editFinding(item["Finding ID"]);
+        });
+
+        editCell.appendChild(editButton);
+        row.appendChild(editCell);
+
+        tbody.appendChild(row);
+    });
+}
+
+/* =====================================================
+   DATE FORMAT
+===================================================== */
+
+function formatDate(value) {
+    if (!value) return "-";
+
+    const date = new Date(value);
+
+    if (isNaN(date.getTime())) return value;
+
+    return date.toLocaleDateString("en-GB");
+}
+
+function dateInputValue(value) {
+    if (!value) return "";
+
+    const text = String(value);
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+        return text.substring(0, 10);
+    }
+
+    const date = new Date(value);
+
+    if (isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+/* =====================================================
+   ADD FORM CONTROLS
+===================================================== */
+
+function openForm() {
+    document.getElementById("findingModal").style.display = "block";
+}
+
+function closeForm() {
+    document.getElementById("findingModal").style.display = "none";
+}
+
+/* =====================================================
+   EDIT EXISTING FINDING
+===================================================== */
+
+function editFinding(findingId) {
+    const item = findings.find(
+        x => String(x["Finding ID"]) === String(findingId)
+    );
+
+    if (!item) {
+        showMessage("Finding record not found.", true);
+        return;
+    }
+
+    editingFindingId = findingId;
+
+    document.getElementById("editFindingId").textContent =
+        "Finding ID: " + findingId;
+
+    document.getElementById("editTargetDate").value =
+        dateInputValue(item["Target Date"]);
+
+    document.getElementById("editStatus").value =
+        item["Status"] || "Pending";
+
+    document.getElementById("editAction").value =
+        item["Action"] || "";
+
+    document.getElementById("editAfterPhoto").value = "";
+    document.getElementById("editAfterPreview").style.display = "none";
+
+    const currentImage = document.getElementById("editAfterCurrent");
+
+    if (item.After) {
+        currentImage.src = getDriveImageSource(item.After);
+        currentImage.style.display = "block";
+    } else {
+        currentImage.src = "";
+        currentImage.style.display = "none";
+    }
+
+    document.getElementById("editModal").style.display = "block";
+}
+
+function closeEditModal() {
+    document.getElementById("editModal").style.display = "none";
+    editingFindingId = null;
+}
+
+/* =====================================================
+   SAVE EDITED FINDING
+===================================================== */
+
+document.getElementById("editForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!editingFindingId) {
+        showMessage("No finding selected for editing.", true);
+        return;
+    }
+
+    const button = document.getElementById("updateButton");
+    const selectedId = editingFindingId;
+
+    button.disabled = true;
+    button.textContent = "Updating...";
+
+    try {
+        let afterUrl = "";
+
+        const afterFile = document.getElementById("editAfterPhoto").files[0];
+
+        if (afterFile) {
+            button.textContent = "Uploading photo...";
+            afterUrl = await uploadImage(afterFile);
+        }
+
+        const updates = {
+    "Responsible Person": document.getElementById("editResponsiblePerson").value,
+    "Target Date": document.getElementById("editTargetDate").value,
+    "Status": document.getElementById("editStatus").value,
+    "Action": document.getElementById("editAction").value
+};
+
+        // Only replace After if a new photo was selected.
+        if (afterUrl) {
+            updates["After"] = afterUrl;
+        }
+
+        button.textContent = "Updating...";
+
+        const response = await jsonpRequest({
+            action: "updateFinding",
+            id: selectedId,
+            data: JSON.stringify(updates)
+        });
+
+        if (!response || response.success !== true) {
+            throw new Error(
+                response?.message || "Finding update failed."
+            );
+        }
+
+        closeEditModal();
+
+        showMessage("Finding updated successfully.", false);
+
+        await loadData();
+
+    } catch (error) {
+        console.error("Update finding error:", error);
+        showMessage("Unable to update finding: " + error.message, true);
+
+    } finally {
+        button.disabled = false;
+        button.textContent = "Update Finding";
+    }
+});
+
+
+/* =====================================================
+   SUBMIT NEW FINDING
+===================================================== */
+
+document.getElementById("findingForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const form = this;
+    const button = document.getElementById("saveButton");
+
+    const beforeFile = document.getElementById("beforePhoto").files[0];
+
+    if (!beforeFile) {
+        showMessage("Please upload the Before photograph.", true);
+        return;
+    }
+
+    button.disabled = true;
+
+    try {
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+
+        payload.Date = new Date().toISOString();
+
+        // Upload Before photograph
+        button.textContent = "Uploading Before photo...";
+        payload.Before = await uploadImage(beforeFile);
+
+        // After photograph will be added during the corrective action stage
+        payload.After = "";
+
+        // Save finding to Google Sheets
+        button.textContent = "Saving finding...";
+
+        const response = await jsonpRequest({
+            action: "addFinding",
+            data: JSON.stringify(payload)
+        });
+
+        if (!response || response.success !== true) {
+            throw new Error(
+                response?.message || "Finding submission failed."
+            );
+        }
+
+        showMessage("Finding saved successfully.", false);
+
+        form.reset();
+
+        document.getElementById("beforePreview").style.display = "none";
+
+        closeForm();
+
+        await loadData();
+
+    } catch (error) {
+        console.error("Save finding error:", error);
+        showMessage("Unable to save finding: " + error.message, true);
+
+    } finally {
+        button.disabled = false;
+        button.textContent = "Save Finding";
+    }
+});
+
+/* =====================================================
+   MESSAGE DISPLAY
+===================================================== */
+
+function showMessage(message, isError) {
+    const element = document.getElementById("message");
+    element.textContent = message;
+    element.style.color = isError ? "#dc2626" : "#15803d";
+}
+
+/* =====================================================
+   START DASHBOARD
+===================================================== */
+
+loadData();
+</script>
+
+</body>
+</html>
